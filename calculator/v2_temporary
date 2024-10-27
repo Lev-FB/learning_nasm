@@ -1,0 +1,87 @@
+global    _start
+section .rodata
+        degree_mult dq 10
+section .data 
+        first_message db "Enter number :"
+        second_message db "Enter second number :"
+        result dq 0
+        result2 dq 0 
+        char db "123"
+section   .bss 
+        buffer resq 1
+        counter resb 1
+        degree_res resb 1
+
+section  .text
+_start:
+        mov rax ,0x02000004
+        lea rsi , [rel first_message]
+        mov rdx, 14
+        syscall
+
+        mov rdi,0
+        lea rsi,[rel buffer]
+        mov rdx , 64
+        mov  rax, 0x02000003
+        syscall
+        
+        mov rax , [rel buffer]
+        sub rax , 48
+        mov [rel result], rax 
+
+        mov rax ,0x02000004
+        lea rsi , [rel second_message]
+        mov rdx, 21
+        syscall
+
+        mov rdi,0
+        lea rsi,[rel buffer]
+        mov rdx , 64
+        mov  rax, 0x02000003
+        syscall
+        
+        mov rax , [rel buffer]
+        sub rax , 48
+        add [rel result], rax 
+
+        call ascii_to_int
+        mov rdi , [rel result2]
+        mov  rax, 0x02000001 
+        syscall
+
+ascii_to_int : 
+        ;Регистр r9 строка 123 = 3 * 10^0 + 2 * 10^2
+        mov rcx , 3
+        mov r12 , 0
+
+                add [rel char],r12 ; смещение в 1 байт
+                movzx r10, byte [rel char] 
+                sub r10,48  ; в r10 хранится цифра 
+                mov [rel result2] , r10
+                mov r14 , rcx - 1
+                call degree
+                add r10 , r15
+                mov r13 , 48
+                add [rel result2 ] , r13
+                inc r12
+
+                lea rsi  , [rel result2]
+                mov rax , 0x02000004
+                mov rdi , 1
+                mov rdx, 1
+                syscall
+
+degree : 
+        ;r14 степень
+        mov r15 , 0 ;
+        mov rax , 1
+        mov rdx, 10
+        degree_loop :
+                cmp r14,r15
+                je my_ret
+                imul rax,rdx
+                inc r15
+                jne degree_loop
+my_ret :
+        mov r15 , rax
+        ret     
