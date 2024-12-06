@@ -1,0 +1,146 @@
+section .data 
+    num dq 0
+    format db "value: %d",0
+    first db "input first value : "
+    first_len equ $ - first
+    second db "input second value : "
+    second_len equ $ - second
+    action db "enter the action (+ - / *) : "
+    action_len equ $ -action
+section .bss
+    out_buffer resb 64
+    first_buffer resb 64
+    second_buffer resb 64
+    sign resq 1 
+    first_num resb 64
+    second_num resb 64
+    in_descriptor resq 1 
+    out_descriptor resq 1
+section .text
+    extern GetStdHandle, WriteFile, wsprintfA,atoi,ReadFile,ExitProcess
+    global main
+
+main:
+    mov rcx , -10 
+    call GetStdHandle
+    mov [rel in_descriptor], rax;
+
+    mov rcx , -11
+    call GetStdHandle
+    mov [rel out_descriptor], rax
+
+
+    mov rcx , [rel out_descriptor]
+    lea rdx , [rel first]
+    mov r8 , first_len
+    mov r9,0
+    call WriteFile
+
+
+    mov rcx , [rel in_descriptor]
+    lea rdx , [rel first_buffer]
+    mov r8 , 64
+    mov r9,0
+    call ReadFile
+    
+    lea rcx ,[rel first_buffer]   
+    call atoi
+
+    mov [rel first_num],rax
+
+    mov rcx , [rel out_descriptor]
+    lea rdx , [rel second]
+    mov r8 , second_len
+    mov r9,0
+    call WriteFile
+
+    mov rcx , [rel in_descriptor]
+    lea rdx , [rel second_buffer]
+    mov r8 , 64
+    mov r9,0
+    call ReadFile
+
+    lea rcx ,[rel second_buffer]   
+    call atoi
+
+    mov [rel second_num],rax
+
+    mov rcx , [rel out_descriptor]
+    lea rdx , [rel action]
+    mov r8 , action_len
+    mov r9,0
+    call WriteFile
+
+    
+    mov rcx , [rel in_descriptor]
+    lea rdx , [rel sign]
+    mov r8 ,1
+    mov r9,0
+    call ReadFile
+    
+    mov rax ,  [rel sign]
+    mov rdx ,"*"
+    cmp rax ,rdx
+    jz multiply
+    
+    mov rdx ,"+"
+    cmp rax ,rdx
+    jz sum
+
+    mov rdx , "-"
+    cmp rax,rdx
+    jz subtraction
+
+    mov rdx , "/"
+    cmp rax,rdx
+    jz division
+
+ret
+
+division :
+    mov rax, [rel first_num]
+    mov rdx , 0 
+    mov r8d, dword [rel second_num]
+    div  r8d
+    call format_func
+    call out_func
+
+subtraction :
+    mov rax, [rel first_num]
+    sub rax, [rel second_num]
+    call format_func
+    call out_func
+
+sum:
+    mov rax, [rel first_num]
+    add rax, [rel second_num]
+    call format_func
+    call out_func
+
+multiply : 
+    mov rax, [rel first_num]
+    imul rax, [rel second_num]
+    call format_func
+    call out_func
+   
+out_func :
+    mov rcx , -11 
+    call GetStdHandle
+
+    mov rcx ,rax
+    lea rdx , [rel out_buffer]
+    mov r8,32
+    mov r9,0
+    call WriteFile
+    call ExitProcess
+
+
+format_func :
+    mov [rel num] , rax 
+
+    lea rcx , [rel out_buffer]
+    lea rdx , [rel format]
+    mov r8 , [rel num]
+    mov r9,0
+    call wsprintfA
+    ret
